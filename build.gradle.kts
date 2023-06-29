@@ -1,4 +1,6 @@
 import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.toJavaDuration
@@ -12,9 +14,6 @@ plugins {
     id("io.spring.dependency-management") version "1.1.0"
     id("org.springframework.boot") version "3.1.1"
 }
-
-group = "com.example"
-version = "0.0.1-SNAPSHOT"
 
 val dockerRepository = "lexluthor421"
 
@@ -51,6 +50,13 @@ tasks {
 
     withType<Test> {
         useJUnitPlatform()
+        testLogging {
+            events = setOf(TestLogEvent.PASSED, TestLogEvent.SKIPPED, TestLogEvent.FAILED)
+            exceptionFormat = TestExceptionFormat.FULL
+            showCauses = true
+            showExceptions = true
+            showStackTraces = true
+        }
     }
 
     register<DockerBuildImage>("dockerBuildImage") {
@@ -58,6 +64,7 @@ tasks {
         description = "Builds and tags the output Docker image using the current environment architecture."
         inputDir.set(projectDir)
         images.add("$dockerRepository/${project.name}:${project.version}")
+        buildArgs.put("JAR_FILE", bootJar.get().archiveFileName.get())
         dependsOn(bootJar)
     }
 
